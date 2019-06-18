@@ -32,9 +32,10 @@ class Server:
     def handler(self, c, a):
         while True:
             data = c.recv(1024)
+            sender = bytes(str(a[0]) + ':' + str(a[1]) + " says: ", "utf-8")
             for connection in self.connections:
                 if connection != c:
-                    connection.send(data)
+                    connection.send(sender + data)
 
             if not data:
                 print(str(a[0]) + ":" + str(a[1]), "disconnected")
@@ -75,7 +76,7 @@ class Client:
 
     def sendMsg(self, sock):
         while True:
-            sock.send(bytes(input(""), 'utf-8'))
+            sock.send(bytes(input(), 'utf-8'))
 
     def updatePeers(self, peerData):
         p2p.peers = str(peerData, "utf-8").split(",")
