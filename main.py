@@ -29,10 +29,21 @@ class Server:
             print(str(a[0]) + ':' + str(a[1]), "connected")
             self.sendPeers()
 
+            iThread = threading.Thread(target=self.sendMsg, args=(c,))
+            iThread.daemon = True
+            iThread.start()
+
+    def sendMsg(self, connection):
+        while True:
+            connection.send(bytes(input(""), 'utf-8'))
+
     def handler(self, c, a):
         while True:
             data = c.recv(1024)
             sender = bytes(str(a[0]) + ':' + str(a[1]) + " says: ", "utf-8")
+
+            print(data)
+
             for connection in self.connections:
                 if connection != c:
                     connection.send(sender + data)
@@ -84,7 +95,7 @@ class Client:
 class p2p:
      # this list holds all the peers connected to the server.
      # initialized to 127.0.0.1 so the first node will start as a server
-     peers = ['127.0.0.1']
+     peers = ['192.248.9.138']
 
 
 while True:
