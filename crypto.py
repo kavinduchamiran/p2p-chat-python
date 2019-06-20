@@ -1,6 +1,5 @@
 #  gcc -shared -Wl,-soname,ot -o ot.so -fPIC OTClientServer.c ObliviousTransfer.c -lgmp
 import ctypes
-
 #import c library
 alice =ctypes.cdll.LoadLibrary('./ot.so')
 bob =ctypes.cdll.LoadLibrary('./ot2.so')
@@ -40,23 +39,23 @@ g2 = alice.GetPublicParams(3)
 #Send & set the security params to Bob (p,g0,g1,g2 - only server to client)
 bob.SetPublicParams(p,g0,g1,g2)
 
-print "Bob P :", bob.GetPublicParams(0)
-print "Bob G0 :", bob.GetPublicParams(1)
-print "Bob G1 :", bob.GetPublicParams(2)
-print "Bob G2 :", bob.GetPublicParams(3)
-
-print "Alice P :", alice.GetPublicParams(0)
-print "Alice G0 :", alice.GetPublicParams(1)
-print "Alice G1 :", alice.GetPublicParams(2)
-print "Alicc G2 :", alice.GetPublicParams(3)
+# print "Bob P :", bob.GetPublicParams(0)
+# print "Bob G0 :", bob.GetPublicParams(1)
+# print "Bob G1 :", bob.GetPublicParams(2)
+# print "Bob G2 :", bob.GetPublicParams(3)
+#
+# print "Alice P :", alice.GetPublicParams(0)
+# print "Alice G0 :", alice.GetPublicParams(1)
+# print "Alice G1 :", alice.GetPublicParams(2)
+# print "Alicc G2 :", alice.GetPublicParams(3)
 
 
 #Get the blinded key
 aliceBKey = alice.GetBlinedKey()
 bobBKey = bob.GetBlinedKey()
 
-print "Alice Blinded Key:", aliceBKey
-print "Bob Blinded Key:", bobBKey
+# print "Alice Blinded Key:", aliceBKey
+# print "Bob Blinded Key:", bobBKey
 
 # Send & set Shared key (blindedkey -bothside)
 alice.SetSharedKey(bobBKey)

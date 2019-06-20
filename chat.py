@@ -3,13 +3,12 @@ import threading
 import sys
 import time
 from random import randint
-import ctypes
 
 # Both the classes are implemented in the same file so the first one to run main.py will
 # become the server and the others will automatically be client(s)
 
 # When a server crashes, immediately one of the clients will become the server and other
-# clients will connect to that new server
+# clients will connect to that new server automatically
 
 class Server:
     connections = []    # keep the connections
@@ -24,10 +23,7 @@ class Server:
 
         print("Server running")
 
-        c, a = None, None
-
-        while not c and not a:
-            print('Waiting for Bob to connect')
+        while True:
             # there are 2 main methods on Server class
             # handler() to listen to clients' messages
             # sendMsg() to listen to own messages
@@ -35,66 +31,36 @@ class Server:
             # main thread will be listning to client connection requests
             c, a = sock.accept()
 
-        print('Bob connected')
-        self.handler(c, a)
+            # cThread will be running handler()
+            cThread = threading.Thread(target=self.handler, args=(c, a))
+            cThread.daemon = True
+            cThread.start()
+
+            self.connections.append(c)
+            self.peers.append(a[0])
+
+            print(str(a[0]) + ':' + str(a[1]), "connected")
+            self.sendPeers()
+
+            # iThread will be running sendMsg()
+            iThread = threading.Thread(target=self.sendMsg, args=(c,))
+            iThread.daemon = True
+            iThread.start()
+
+    def sendMsg(self, connection, msg):
+        # encode user input to utf-8, convert it to a bitstream and send over the network
+        connection.send(bytes(msg, 'utf-8'))
 
     def handler(self, c, a):
-        alice = ctypes.cdll.LoadLibrary('./ObliviousTransfer/ot.so')
+        data = c.recv(1024)
 
-        # overwrite default return type to char
-        alice.GetPublicParams.restype = ctypes.c_char_p
-        alice.GetBlinedKey.restype = ctypes.c_char_p
-        alice.GetSharedTuple.restype = ctypes.c_char_p
-        alice.GetBValue.restype = ctypes.c_char_p
-        alice.GetEValue.restype = ctypes.c_char_p
-        alice.GetAValue.restype = ctypes.c_char_p
-        alice.GetBlinedR.restype = ctypes.c_char_p
-
-        # Initiate the protocol
-        alice.InitOT(0)
-
-        # get the security parameter
-        securityParam = alice.GetSecurityParam()
-
-        # Get the security params from initiater(Alice)
-        p = alice.GetPublicParams(0)
-        g0 = alice.GetPublicParams(1)
-        g1 = alice.GetPublicParams(2)
-        g2 = alice.GetPublicParams(3)
-
-        # Send & set the security params to Bob (p,g0,g1,g2 - only server to client)
-        self.sendMsg(c, p)
-        self.sendMsg(c, g0)
-        self.sendMsg(c, g1)
-        self.sendMsg(c, g2)
-
-
-
-
-
-
-
-
-
-
-
-    def sendMsg(self, connection, msg=None):
-        # encode user input to utf-8, convert it to a bitstream and send over the network
-        if connection and msg:
-            connection.send(bytes(msg, 'utf-8'))
-
-    def receive(self, c, a):
-        while True:
-            # listen to clients' data streams
-
-            data = c.recv(1024)
-            sender = bytes(str(a[0]) + ':' + str(a[1]) + " says: ", "utf-8")
-
-            if not data:
-                # when there is no data, that means client has been disconnected
-                # print(str(a[0]) + ":" + str(a[1]), "disconnected")
-                # c.close()
-                break
+        if not data:
+            # when there is no data, that means client has been disconnected
+            print(str(a[0]) + ":" + str(a[1]), "disconnected")
+            self.connections.remove(c)
+            self.peers.remove(a[0])
+            c.close()
+            self.sendPeers()
 
         return str(data, 'utf-8')
 
@@ -114,7 +80,6 @@ class Client:
 
         sock.connect((address, 10000))
         print("Connected to server")
-        p2p.status = 'client'
 
         iThread = threading.Thread(target=self.sendMsg, args=(sock,))
         iThread.daemon = True
@@ -130,9 +95,9 @@ class Client:
             else:
                 print(str(data, 'utf-8'))
 
-    def sendMsg(self, sock, msg=None):
-        while True and msg:
-            sock.send(bytes(msg, 'utf-8'))
+    def sendMsg(self, sock):
+        while True:
+            sock.send(bytes(input(), 'utf-8'))
 
     def updatePeers(self, peerData):
         p2p.peers = str(peerData, "utf-8").split(",")
@@ -141,7 +106,6 @@ class p2p:
      # this list holds all the peers connected to the server.
      # set this to other node's ip address
      peers = ['127.0.0.1']
-     status = ''
 
 
 while True:
@@ -168,7 +132,6 @@ while True:
 
     except KeyboardInterrupt:
         sys.exit(0)
-
 
 
 
